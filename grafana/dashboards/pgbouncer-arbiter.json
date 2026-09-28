@@ -1,0 +1,63 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "PgBouncer Arbiter - 1С QoS",
+    "tags": ["1c", "pgbouncer", "qos"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "VIP Latency p95",
+        "type": "stat",
+        "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(arbiter_request_latency_seconds_bucket{priority=\"high\"}[1m])) * 1000",
+            "legendFormat": "VIP p95 ms"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": {
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 200, "color": "yellow"},
+                {"value": 500, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Requests by Priority",
+        "type": "graph",
+        "gridPos": {"x": 6, "y": 0, "w": 18, "h": 8},
+        "targets": [
+          {"expr": "rate(arbiter_requests_total{priority=\"high\"}[1m])", "legendFormat": "HIGH"},
+          {"expr": "rate(arbiter_requests_total{priority=\"normal\"}[1m])", "legendFormat": "NORMAL"},
+          {"expr": "rate(arbiter_requests_total{priority=\"low\"}[1m])", "legendFormat": "LOW"}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Preemptions (read-only)",
+        "type": "stat",
+        "gridPos": {"x": 0, "y": 4, "w": 6, "h": 3},
+        "targets": [
+          {"expr": "rate(arbiter_preemptions_total[1m])", "legendFormat": "Preemptions/sec"}
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Errors by Type",
+        "type": "graph",
+        "gridPos": {"x": 6, "y": 8, "w": 18, "h": 6},
+        "targets": [
+          {"expr": "rate(arbiter_errors_total[1m])", "legendFormat": "{{error_type}}"}
+        ]
+      }
+    ]
+  }
+}
