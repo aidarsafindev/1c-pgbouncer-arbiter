@@ -1,0 +1,97 @@
+services:
+  pgbouncer-high:
+    image: edoburu/pgbouncer:latest
+    container_name: pgb-high
+    volumes:
+      - ./config/pgbouncer/high/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./config/pgbouncer/high/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    ports:
+      - "6432:5432"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  pgbouncer-normal:
+    image: edoburu/pgbouncer:latest
+    container_name: pgb-normal
+    volumes:
+      - ./config/pgbouncer/normal/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./config/pgbouncer/normal/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    ports:
+      - "6433:5432"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  pgbouncer-low:
+    image: edoburu/pgbouncer:latest
+    container_name: pgb-low
+    volumes:
+      - ./config/pgbouncer/low/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./config/pgbouncer/low/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    ports:
+      - "6434:5432"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  arbiter:
+    build: ./arbiter
+    container_name: pgb-arbiter
+    ports:
+      - "5432:5432"
+      - "9090:9090"
+    environment:
+      PGB_HIGH_HOST: pgbouncer-high
+      PGB_HIGH_PORT: 5432
+      PGB_NORMAL_HOST: pgbouncer-normal
+      PGB_NORMAL_PORT: 5432
+      PGB_LOW_HOST: pgbouncer-low
+      PGB_LOW_PORT: 5432
+      POSTGRES_HOST: host.docker.internal
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: demo_pgbouncer
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PREEMPTION_ENABLED: "true"
+      VIP_USERS: "vip,director,ceo"
+    depends_on:
+      - pgbouncer-high
+      - pgbouncer-normal
+      - pgbouncer-low
+    restart: unless-stopped
+
+  load-generator:
+    build: ./load-generator
+    container_name: pgb-loadgen
+    environment:
+      ARBITER_HOST: arbiter
+      ARBITER_PORT: 5432
+      POSTGRES_DB: demo_pgbouncer
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      CONCURRENT_VIP: 10
+      CONCURRENT_NORMAL: 50
+      CONCURRENT_LOW: 20
+      DURATION_SECONDS: 120
+    depends_on:
+      - arbiter
+    profiles:
+      - load
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: pgb-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - grafana_data:/var/lib/grafana
+    profiles:
+      - monitoring
+
+volumes:
+  grafana_data:
