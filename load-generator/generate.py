@@ -34,7 +34,6 @@ async def make_request(app_name: str, heavy: bool = False):
     """Подключается к арбитру, выполняет запрос, закрывает соединение."""
     conn = None
     try:
-        start = time.monotonic()
         conn = await asyncpg.connect(
             host=ARBITER_HOST,
             port=ARBITER_PORT,
@@ -50,8 +49,7 @@ async def make_request(app_name: str, heavy: bool = False):
         else:
             await conn.execute("SELECT 1")
 
-        elapsed = time.monotonic() - start
-        return elapsed, "ok"
+        return 0, "ok"
 
     except Exception as e:
         return 0, str(e)
