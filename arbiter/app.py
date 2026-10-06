@@ -11,13 +11,13 @@ TCP-арбитр подключений для 1С с приоритезацие
 import asyncio
 import logging
 import struct
+
+import asyncpg
 from prometheus_client import (
     Counter,
     Gauge,
     Histogram,
 )
-
-import asyncpg
 
 from config import Config
 
